@@ -2,6 +2,7 @@ BLENDER_STYLE = '''
 * {
     background-color: #2b2b2b;
     color: #dddddd;
+    border-color : : rgba(255, 255, 255, 0.05) ; 
 
 }
 '''

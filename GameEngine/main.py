@@ -1,4 +1,4 @@
-import sys
+import sys , os , json 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -6,6 +6,8 @@ import style , prefrenece
 from dataclasses import dataclass
 from FileExplorer import FileExplorer
 from Viewport import Viewport
+from CameraDesc import CameraDesc
+from MeshDesc import MeshDesc
 @dataclass
 class DefoldProject : 
     project_path = None
@@ -17,7 +19,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.project = DefoldProject()
-        self.setWindowTitle("Blender Style PyQt App")
+        self.setWindowTitle("Defold Editor")
         self.showMaximized()
         self._create_menu()
         self._create_main_layout()
@@ -30,6 +32,15 @@ class MainWindow(QMainWindow):
         file_menu.addAction(open_action)
         open_action.setShortcut(QKeySequence.Open)
         open_action.triggered.connect(self.open_project)
+        edit_menu = menubar.addMenu("Edit")
+        Add_menu = menubar.addMenu("Add")
+        #---
+        add_camera = QAction("Camera",self)
+        add_camera.triggered.connect(self.addCamera)
+        Add_menu.addAction(add_camera)
+        add_mesh = QAction("Mesh",self)
+        add_mesh.triggered.connect(self.addMesh)
+        Add_menu.addAction(add_mesh)
 
     def _create_main_layout(self) : 
         self.fileExplorer = FileExplorer(self)
@@ -79,8 +90,23 @@ class MainWindow(QMainWindow):
         )
         if folder:
             self.fileExplorer.set_rootPath(folder)
+            self.fileExplorer.on_double_click = self.on_fileExplorerItemDoubleClicked
 
+    def addCamera(self) : 
+        cam = CameraDesc.create_from_ui(self)
+        if cam : 
+            save_folder = self.fileExplorer.currentPathFolder()
+            # cam.save2file(save_folder)
 
+    def addMesh(self) : 
+        mesh = MeshDesc.create_from_ui(self)
+        if mesh : 
+            save_folder = self.fileExplorer.currentPathFolder()
+            mesh.save2file(save_folder)
+    def on_fileExplorerItemDoubleClicked(self,path) : 
+        if os.path.isdir(path) : return 
+        ext = os.path.splitext(path)[1]
+        print(ext)
 
 
 

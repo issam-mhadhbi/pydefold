@@ -46,9 +46,9 @@ class FileExplorer(QTreeView):
         
 
 
-    def on_double_click(self, index):
+    def on_double_clicked(self, index):
         path = self.model.filePath(index)
-        self.selected_index= index 
+        self.currentPath = self.model.filePath(index)
         self.on_double_click(path)
 
     # =========================
@@ -90,7 +90,7 @@ class FileExplorer(QTreeView):
     def on_single_click(self,index):
         if not index.isValid():
             return
-        self.selected_index= index 
+        self.currentPath = self.model.filePath(index)
         path = self.model.filePath(index)
         self.on_click(path)
 
@@ -113,7 +113,7 @@ class FileExplorer(QTreeView):
         self.model = FileExplorerFileSystemModel(parent=self)
         self.model.setRootPath(root_path)
         self.model.setHeaderData(0, Qt.Horizontal, "File Explorer")
-        self.selected_index = None 
+        self.currentPath = self.model.rootPath()
         # Filters (optional)
         self.model.setFilter(QDir.AllDirs | QDir.Files | QDir.NoDotAndDotDot)
         # =========================
@@ -136,10 +136,17 @@ class FileExplorer(QTreeView):
         header.setSortIndicatorShown(False)
         header.setHighlightSections(False)
         # Double click open
-        self.doubleClicked.connect(self.on_double_click)
+        self.doubleClicked.connect(self.on_double_clicked)
         self.clicked.connect(self.on_single_click)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.open_menu)
+
+    def currentPathFolder(self) : 
+        if not os.path.exists(self.currentPath) : 
+            self.currentPath = self.model.rootPath()
+        if os.path.isfile(self.currentPath) : 
+            return os.path.dirname(self.currentPath)
+        return self.currentPath
 # =========================
 # RUN
 # =========================
