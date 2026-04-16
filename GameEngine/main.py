@@ -5,7 +5,7 @@ from PyQt5.QtGui import *
 import style , prefrenece 
 from dataclasses import dataclass
 from FileExplorer import FileExplorer
-
+from Viewport import Viewport
 @dataclass
 class DefoldProject : 
     project_path = None
@@ -33,7 +33,6 @@ class MainWindow(QMainWindow):
 
     def _create_main_layout(self) : 
         self.fileExplorer = FileExplorer(self)
-        self.fileExplorer.set_rootPath(".")
         self.fileExplorer.setSizePolicy(
             QSizePolicy.Preferred, QSizePolicy.Expanding
         )
@@ -41,7 +40,8 @@ class MainWindow(QMainWindow):
         self.assests_outline.setSizePolicy(
             QSizePolicy.Preferred, QSizePolicy.Expanding
         )
-        self.middle_zone = QFrame(self)
+        self.middle_zone = QTabWidget(self)
+        self.initQTabwidget()
         self.middle_zone.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Expanding
         )
@@ -63,6 +63,11 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.main_split)
         container.setLayout(layout)
         self.setCentralWidget(container)
+
+    def initQTabwidget(self):
+        win = Viewport(self)
+        layout = QHBoxLayout(win)
+        self.middle_zone.addTab(win, "Tab One")
 
 
     def open_project(self):

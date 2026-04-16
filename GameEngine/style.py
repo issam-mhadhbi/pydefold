@@ -1,4 +1,11 @@
 BLENDER_STYLE = '''
+* {
+    background-color: #2b2b2b;
+    color: #dddddd;
+
+}
+'''
+'''
 /* ============================================================
    BLENDER THEME FOR PyQt5
    Inspired by Blender 3.x / 4.x dark UI theme
