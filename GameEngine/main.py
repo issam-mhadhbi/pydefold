@@ -10,13 +10,30 @@ from Viewport import Viewport
 from CameraDesc import CameraDesc
 from MeshDesc import MeshDesc
 
+
+
 @dataclass
-class DefoldProject : 
+class DefoldProject:
     project_path = None
 
-    def find_by_ext(self,ext) : 
+    def find_by_ext(self, ext):
         root = Path(self.project_path)
-        return sorted([str(p.relative_to(self.project_path)) for p in root.rglob(f"*{ext}")])
+        return sorted([
+            str(p.relative_to(root))
+            for p in root.rglob(f"*{ext}")
+        ])
+
+    def get_all_folders(self):
+        root = Path(self.project_path)
+
+        folders = [root]  # include root
+
+        folders += [p for p in root.rglob("*") if p.is_dir()]
+
+        return sorted([
+            str(p.relative_to(root)) if p != root else "."
+            for p in folders
+        ])
 
 
 
@@ -88,18 +105,23 @@ class MainWindow(QMainWindow):
         self.middle_zone.addTab(win, "Tab One")
 
 
-    def open_project(self):
-        
-        folder = QFileDialog.getExistingDirectory(
-            self,
-            "Select Folder",
-            prefrenece.PROJECTS_FOLDER,
-            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog
-        )
-        if folder:
-            self.fileExplorer.set_rootPath(folder)
-            self.fileExplorer.on_double_click = self.on_fileExplorerItemDoubleClicked
-            self.project.project_path = folder
+    def open_project(self,project_path = None ):
+        if not ( project_path is None) : 
+            if os.path.exists(project_path) : 
+                self.fileExplorer.set_rootPath(project_path)
+                self.fileExplorer.on_double_click = self.on_fileExplorerItemDoubleClicked
+                self.project.project_path = project_path
+        else :     
+            folder = QFileDialog.getExistingDirectory(
+                self,
+                "Select Folder",
+                prefrenece.PROJECTS_FOLDER,
+                QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog
+            )
+            if folder:
+                self.fileExplorer.set_rootPath(folder)
+                self.fileExplorer.on_double_click = self.on_fileExplorerItemDoubleClicked
+                self.project.project_path = folder
 
     def addCamera(self) : 
         cam = CameraDesc.create_from_ui(self)
@@ -108,10 +130,11 @@ class MainWindow(QMainWindow):
             # cam.save2file(save_folder)
 
     def addMesh(self) : 
-        mesh = MeshDesc.create_from_ui(self,project=self.project)
+        save_folder = self.fileExplorer.currentPathFolder()
+        mesh = MeshDesc.create_from_ui(self,project=self.project,save_folder = save_folder )
         if mesh : 
-            save_folder = self.fileExplorer.currentPathFolder()
             mesh.save2file(save_folder)
+    
     def on_fileExplorerItemDoubleClicked(self,path) : 
         if os.path.isdir(path) : return 
         ext = os.path.splitext(path)[1]
@@ -129,7 +152,8 @@ if __name__ == "__main__":
     app.setStyleSheet(style.BLENDER_STYLE)
 
     window = MainWindow()
-    window.open_project()
+    window.open_project(os.path.join(prefrenece.PROJECTS_FOLDER , "Mobile-Game"))
     window.show()
 
     sys.exit(app.exec_())
+

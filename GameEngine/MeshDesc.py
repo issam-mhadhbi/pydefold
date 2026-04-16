@@ -2,10 +2,12 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import List
 from pydefoldsdk import sdk
-import os , sys 
+import os , sys , json 
 from google.protobuf.text_format import MessageToString, Parse
 from PyQt5.QtWidgets import *
-
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from pathlib import Path
 
 class PrimitiveType(IntEnum):
     PRIMITIVE_LINES = 1
@@ -39,15 +41,20 @@ class MeshDesc:
             # =========================
             mesh_group = QGroupBox("Mesh")
             mesh_layout = QFormLayout()
-
+            # material field 
             self.material = QComboBox()
+            self.material.setCurrentIndex(-1)
+            self.material.setPlaceholderText("Select Material...")
             materials = self.project.find_by_ext(ext = ".material")
             [self.material.addItems(materials)]
-            if (idx := self.material.findData(self.data.material)) >= 0: self.material.setCurrentIndex(idx)
+            # vertex field 
             self.vertices = QComboBox()
-            buffers = self.project.find_by_ext(ext = ".buffer")
-            [self.vertices.addItems(buffers)]
-            if (idx := self.vertices.findData(self.data.vertices)) >= 0: self.vertices.setCurrentIndex(idx)
+            self.vertices.setCurrentIndex(-1)
+            self.vertices.setPlaceholderText("Select primitive...")
+            self.vertices.addItems(self.project.find_by_ext(ext = ".buffer"))
+            self.vertices.currentIndexChanged.connect(self.on_buffer_changed)
+            self.vertices.activated.connect(self.on_buffer_changed)
+            
 
 
             mesh_layout.addRow("Material", self.material)
@@ -60,10 +67,14 @@ class MeshDesc:
             # =========================
             stream_group = QGroupBox("Streams")
             stream_layout = QFormLayout()
-
-            self.position_stream = QLineEdit(self.data.position_stream)
-            self.normal_stream = QLineEdit(self.data.normal_stream)
-
+            if self.data.vertices : 
+                self.update_postion_normal_combos(self.data.vertices)
+            self.position_stream = QComboBox()  
+            self.position_stream.setCurrentIndex(-1)
+            self.position_stream.setPlaceholderText("Select Position...")
+            self.normal_stream = QComboBox() 
+            self.normal_stream.setCurrentIndex(-1)
+            self.normal_stream.setPlaceholderText("Select Normal...")
             stream_layout.addRow("Position Stream", self.position_stream)
             stream_layout.addRow("Normal Stream", self.normal_stream)
 
@@ -92,23 +103,62 @@ class MeshDesc:
             main.addWidget(stream_group)
             main.addWidget(prim_group)
 
+        def on_buffer_changed(self,index) : 
+            self.position_stream.clear()
+            self.position_stream.setCurrentIndex(-1)
+            self.position_stream.setPlaceholderText("Select Position...")
+            self.normal_stream.clear()
+            self.normal_stream.setCurrentIndex(-1)
+            self.normal_stream.setPlaceholderText("Select Normal...")
+            buffer_path = os.path.join(self.project.project_path ,self.vertices.itemText(index))
+            txt = Path(buffer_path).read_text()
+            keys = list()
+            try : 
+                keys = sorted(i.get('name') for i in json.loads(txt))
+            except Exception as err : 
+                msg = f"File buffer ({buffer_path}) is not valid json . "
+                print(msg)
+            self.position_stream.addItems(keys)
+            self.normal_stream.addItems(keys)
+
+        def update_postion_normal_combos(self,buffer_path) : 
+            self.position_stream.clear()
+            self.position_stream.setCurrentIndex(-1)
+            self.position_stream.setPlaceholderText("Select Position...")
+            self.normal_stream.clear()
+            self.normal_stream.setCurrentIndex(-1)
+            self.normal_stream.setPlaceholderText("Select Normal...")
+            abs_buffer_path = os.path.join(self.project.project_path ,buffer_path)
+            txt = Path(abs_buffer_path).read_text()
+            keys = list()
+            try : 
+                sorted(i.get('name') for i in json.loads(txt))
+            except Exception as err : 
+                msg = f"File buffer ({buffer_path}) is not valid json . "
+                print(msg)
+            self.position_stream.addItems(keys)
+            self.normal_stream.addItems(keys)
+
+                
+
+            
         # =========================
         # 🔁 EXTRACT DATA
         # =========================
         def get_value(self) -> "MeshDesc":
             return MeshDesc(
-                material=self.material.currentText().strip(),
-                vertices=self.vertices.currentText().strip(),
-                primitive_type=self.primitive.currentData(),
-                position_stream=self.position_stream.text().strip(),
-                normal_stream=self.normal_stream.text().strip(),
+                material=self.material.currentText(),
+                vertices=self.vertices.currentText(),
+                primitive_type = self.primitive.currentData() , 
+                position_stream=self.position_stream.currentText(),
+                normal_stream=self.normal_stream.currentText(),
             )
 
     # =========================
     # 🪟 FACTORY UI
     # =========================
     @classmethod
-    def create_from_ui(cls, parent , project):
+    def create_from_ui(cls, parent , project,save_folder ):
         from PyQt5.QtWidgets import (
             QDialog, QVBoxLayout, QDialogButtonBox,
             QLineEdit, QLabel, QHBoxLayout, QMessageBox
@@ -117,20 +167,27 @@ class MeshDesc:
         dialog = QDialog(parent=parent)
         dialog.setWindowTitle("New Mesh")
 
+
+
         layout = QVBoxLayout(dialog)
 
-        # =========================
-        # 🔤 NAME FIELD (TOP)
-        # =========================
-        name_layout = QHBoxLayout()
-        name_label = QLabel("Name:")
+        form = QFormLayout()
+
         name_edit = QLineEdit()
+        location_edit = QLineEdit()
 
-        name_layout.addWidget(name_label)
-        name_layout.addWidget(name_edit)
+        # ensure both expand equally
+        name_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        location_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-        layout.addLayout(name_layout)
+        form.addRow("Name:", name_edit)
+        form.addRow("Location:", location_edit)
 
+        # alignment tweaks
+        form.setLabelAlignment(Qt.AlignRight)
+        form.setFormAlignment(Qt.AlignTop)
+
+        layout.addLayout(form)
         # =========================
         # EDITOR
         # =========================
