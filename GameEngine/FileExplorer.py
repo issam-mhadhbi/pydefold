@@ -18,7 +18,23 @@ class FileExplorerFileSystemModel(QFileSystemModel):
 
 
     def data(self, index, role=Qt.DisplayRole):
-        # set icons here 
+        # if role == Qt.DecorationRole:
+        #     if index.column() == 0:
+        #         path = self.filePath(index)
+
+        #         if self.isDir(index):
+        #             return self.icons["folder"]
+
+        #         ext = os.path.splitext(path)[1].lower()
+
+        #         if ext == ".lua":
+        #             return self.icons["lua"]
+        #         elif ext == ".png":
+        #             return self.icons["png"]
+        #         elif ext == ".mesh":
+        #             return self.icons["mesh"]
+
+        #         return self.icons["default"]
 
         return super().data(index, role)
 
@@ -71,9 +87,7 @@ class FileExplorer(QTreeView):
         elif action == rename_action:
             self.edit(index)  # built-in rename
 
-    def on_single_click(self,position):
-        index = self.indexAt(position)
-
+    def on_single_click(self,index):
         if not index.isValid():
             return
         self.selected_index= index 
@@ -115,7 +129,12 @@ class FileExplorer(QTreeView):
         self.setAnimated(True)
         self.setIndentation(18)
         self.setSortingEnabled(True)
-
+        self.setSortingEnabled(True)
+        self.sortByColumn(0, Qt.AscendingOrder)
+        header = self.header()
+        header.setSectionsClickable(False)
+        header.setSortIndicatorShown(False)
+        header.setHighlightSections(False)
         # Double click open
         self.doubleClicked.connect(self.on_double_click)
         self.clicked.connect(self.on_single_click)

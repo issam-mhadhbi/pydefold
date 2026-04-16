@@ -53,6 +53,7 @@ class MainWindow(QMainWindow):
         self.main_split.setStretchFactor(0, 0)
         self.main_split.setStretchFactor(1, 1)
         self.main_split.setStretchFactor(2, 0)
+
         # =========================
         # SET CENTRAL
         # =========================
@@ -71,9 +72,8 @@ class MainWindow(QMainWindow):
             prefrenece.PROJECTS_FOLDER,
             QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog
         )
-
         if folder:
-            print("Selected folder:", folder)
+            self.fileExplorer.set_rootPath(folder)
 
 
 
