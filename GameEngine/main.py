@@ -2,15 +2,22 @@ import sys , os , json
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from pathlib import Path
 import style , prefrenece 
 from dataclasses import dataclass
 from FileExplorer import FileExplorer
 from Viewport import Viewport
 from CameraDesc import CameraDesc
 from MeshDesc import MeshDesc
+
 @dataclass
 class DefoldProject : 
     project_path = None
+
+    def find_by_ext(self,ext) : 
+        root = Path(self.project_path)
+        return sorted([str(p.relative_to(self.project_path)) for p in root.rglob(f"*{ext}")])
+
 
 
 
@@ -82,6 +89,7 @@ class MainWindow(QMainWindow):
 
 
     def open_project(self):
+        
         folder = QFileDialog.getExistingDirectory(
             self,
             "Select Folder",
@@ -91,6 +99,7 @@ class MainWindow(QMainWindow):
         if folder:
             self.fileExplorer.set_rootPath(folder)
             self.fileExplorer.on_double_click = self.on_fileExplorerItemDoubleClicked
+            self.project.project_path = folder
 
     def addCamera(self) : 
         cam = CameraDesc.create_from_ui(self)
@@ -99,7 +108,7 @@ class MainWindow(QMainWindow):
             # cam.save2file(save_folder)
 
     def addMesh(self) : 
-        mesh = MeshDesc.create_from_ui(self)
+        mesh = MeshDesc.create_from_ui(self,project=self.project)
         if mesh : 
             save_folder = self.fileExplorer.currentPathFolder()
             mesh.save2file(save_folder)
@@ -120,6 +129,7 @@ if __name__ == "__main__":
     app.setStyleSheet(style.BLENDER_STYLE)
 
     window = MainWindow()
+    window.open_project()
     window.show()
 
     sys.exit(app.exec_())

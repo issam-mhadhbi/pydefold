@@ -4,6 +4,7 @@ from typing import List
 from pydefoldsdk import sdk
 import os , sys 
 from google.protobuf.text_format import MessageToString, Parse
+from PyQt5.QtWidgets import *
 
 
 class PrimitiveType(IntEnum):
@@ -26,12 +27,8 @@ class MeshDesc:
     # 🧱 NESTED UI EDITOR
     # =========================
     class EditorWidget:
-        def __init__(self, parent=None, data=None):
-            from PyQt5.QtWidgets import (
-                QWidget, QVBoxLayout, QFormLayout,
-                QLineEdit, QComboBox, QGroupBox
-            )
-
+        def __init__(self, parent=None, data=None,project = None):
+            self.project = project
             self.widget = QWidget(parent)
             self.data = data or MeshDesc()
 
@@ -43,8 +40,15 @@ class MeshDesc:
             mesh_group = QGroupBox("Mesh")
             mesh_layout = QFormLayout()
 
-            self.material = QLineEdit(self.data.material)
-            self.vertices = QLineEdit(self.data.vertices)
+            self.material = QComboBox()
+            materials = self.project.find_by_ext(ext = ".material")
+            [self.material.addItems(materials)]
+            if (idx := self.material.findData(self.data.material)) >= 0: self.material.setCurrentIndex(idx)
+            self.vertices = QComboBox()
+            buffers = self.project.find_by_ext(ext = ".buffer")
+            [self.vertices.addItems(buffers)]
+            if (idx := self.vertices.findData(self.data.vertices)) >= 0: self.vertices.setCurrentIndex(idx)
+
 
             mesh_layout.addRow("Material", self.material)
             mesh_layout.addRow("Vertices Buffer", self.vertices)
@@ -74,7 +78,6 @@ class MeshDesc:
             self.primitive = QComboBox()
             for p in PrimitiveType:
                 self.primitive.addItem(p.name, p)
-
             idx = self.primitive.findData(self.data.primitive_type)
             if idx >= 0:
                 self.primitive.setCurrentIndex(idx)
@@ -94,8 +97,8 @@ class MeshDesc:
         # =========================
         def get_value(self) -> "MeshDesc":
             return MeshDesc(
-                material=self.material.text().strip(),
-                vertices=self.vertices.text().strip(),
+                material=self.material.currentText().strip(),
+                vertices=self.vertices.currentText().strip(),
                 primitive_type=self.primitive.currentData(),
                 position_stream=self.position_stream.text().strip(),
                 normal_stream=self.normal_stream.text().strip(),
@@ -105,7 +108,7 @@ class MeshDesc:
     # 🪟 FACTORY UI
     # =========================
     @classmethod
-    def create_from_ui(cls, parent):
+    def create_from_ui(cls, parent , project):
         from PyQt5.QtWidgets import (
             QDialog, QVBoxLayout, QDialogButtonBox,
             QLineEdit, QLabel, QHBoxLayout, QMessageBox
@@ -131,7 +134,7 @@ class MeshDesc:
         # =========================
         # EDITOR
         # =========================
-        editor = cls.EditorWidget(dialog)
+        editor = cls.EditorWidget(dialog, project = project)
         layout.addWidget(editor.widget)
 
         # =========================
