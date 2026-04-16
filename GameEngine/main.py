@@ -4,7 +4,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import style , prefrenece 
 from dataclasses import dataclass
-
+from FileExplorer import FileExplorer
 
 @dataclass
 class DefoldProject : 
@@ -20,8 +20,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Blender Style PyQt App")
         self.showMaximized()
         self._create_menu()
-        self.left_panel = QTreeWidget()
-        self.left_panel.setHeaderHidden(False)
+        self._create_main_layout()
 
     def _create_menu(self):
         menubar = self.menuBar()
@@ -32,7 +31,37 @@ class MainWindow(QMainWindow):
         open_action.setShortcut(QKeySequence.Open)
         open_action.triggered.connect(self.open_project)
 
-
+    def _create_main_layout(self) : 
+        self.fileExplorer = FileExplorer(self)
+        self.fileExplorer.set_rootPath(".")
+        self.fileExplorer.setSizePolicy(
+            QSizePolicy.Preferred, QSizePolicy.Expanding
+        )
+        self.assests_outline = QFrame(self)
+        self.assests_outline.setSizePolicy(
+            QSizePolicy.Preferred, QSizePolicy.Expanding
+        )
+        self.middle_zone = QFrame(self)
+        self.middle_zone.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding
+        )
+        # main splitter 
+        self.main_split = QSplitter(Qt.Horizontal)
+        self.main_split.addWidget(self.fileExplorer)
+        self.main_split.addWidget(self.middle_zone)
+        self.main_split.addWidget(self.assests_outline)
+        self.main_split.setStretchFactor(0, 0)
+        self.main_split.setStretchFactor(1, 1)
+        self.main_split.setStretchFactor(2, 0)
+        # =========================
+        # SET CENTRAL
+        # =========================
+        container = QWidget()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.main_split)
+        container.setLayout(layout)
+        self.setCentralWidget(container)
 
 
     def open_project(self):
