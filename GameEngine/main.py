@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from FileExplorer import FileExplorer
 from Viewport import Viewport
 from CameraDesc import CameraDesc
-from MeshDesc import MeshDesc
+from MeshDesc import MeshDesc , QMeshDescWidget
 
 
 
@@ -34,6 +34,13 @@ class DefoldProject:
             str(p.relative_to(root)) if p != root else "."
             for p in folders
         ])
+
+    def get_all_samplers(self):
+        result = self.find_by_ext(".png")
+        return sorted(result)
+    
+    def LogError(self,msg) : 
+        print(msg )
 
 
 
@@ -131,9 +138,12 @@ class MainWindow(QMainWindow):
 
     def addMesh(self) : 
         save_folder = self.fileExplorer.currentPathFolder()
-        mesh = MeshDesc.create_from_ui(self,project=self.project,save_folder = save_folder )
-        if mesh : 
-            mesh.save2file(save_folder)
+        mesh_ui = QMeshDescWidget( project= self.project)
+        mesh_ui.CreationUI()
+        mesh_ui.exec_blocking()
+        # mesh = MeshDesc.create_from_ui(self,project=self.project,save_folder = save_folder )
+        # if mesh : 
+        #     mesh.save2file(save_folder)
     
     def on_fileExplorerItemDoubleClicked(self,path) : 
         if os.path.isdir(path) : return 
