@@ -1,5 +1,4 @@
-material: ""
+material: "/builtins/fonts/font-fnt.material"
 vertices: ""
-primitive_type: PRIMITIVE_TRIANGLES
 position_stream: "position"
 normal_stream: "normal"
