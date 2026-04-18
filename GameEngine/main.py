@@ -1,15 +1,17 @@
-import sys , os , json 
+import sys , os , json
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from pathlib import Path
-import style , prefrenece 
+import style , prefrenece
 from dataclasses import dataclass
 from FileExplorer import FileExplorer
 from Viewport import Viewport
 from CameraDesc import CameraDesc
-from MeshDesc import MeshDesc , QMeshDescWidget
-
+from MeshDesc import  QMeshDescWidget
+from PyQt5 import uic
+HERE = os.path.dirname(__file__)
+UI = Path(os.path.join(HERE , 'Ui'))
 
 
 @dataclass
@@ -38,18 +40,62 @@ class DefoldProject:
     def get_all_samplers(self):
         result = self.find_by_ext(".png")
         return sorted(result)
-    
-    def LogError(self,msg) : 
-        print(msg )
+
+    def LogError(self,msg) :
+        print("🚨📢🔔⚠️" , msg)
+        self.MainWindow.statusBar().showMessage(f"🚨 {msg}")
+
+    def Log(self,msg) :
+        print(msg)
+        self.MainWindow.statusBar().showMessage(f"📢 {msg}")
+    def setMainWindow(self,mainwindow) :
+        self.MainWindow   = mainwindow
+        
+    def fullPath(self,rel_path) : 
+        return os.path.join(self.project_path,rel_path)
+
+    def relativePath(self, abs_path):
+        abs_path = Path(abs_path).resolve()
+        project = Path(self.project_path).resolve()
+        return str(abs_path.relative_to(project))
 
 
 
 
+class DialogNewResource(QDialog) : 
+    def __init__(self,parent = None,project = None ):
+        super().__init__(parent=parent)
+        self.project = project
+        uic.loadUi(UI / "DialogNew.ui" , self)
+        self.ext = None 
+        self.accepted.connect(self.on_accepted)
+        self.rejected.connect(self.on_rejected)
+    def setExtension(self,ext) : 
+        self.ext = ext 
+        
+    def LoadWidget(self,WidgetDesc,save_in_suggestion = None ) : 
+        self.ItemWidget = QMeshDescWidget(project = self.project , parent = self )
+        self.location.addItems(self.project.get_all_folders())
+        if save_in_suggestion is not None : 
+            self.location.setCurrentText(self.project.relativePath(save_in_suggestion))
+        self.placeholder.addWidget(self.ItemWidget)
+        self.setWindowTitle(self.ItemWidget.DialogTitle)
+
+    def on_accepted(self):
+        self.ItemWidget.deleteLater()
+        saving_folder = self.location.currentText()
+        name = self.name.text().strip()
+        self.ItemWidget.save(folder = saving_folder , name = name )
+        print("Dialog accepted:")
+
+    def on_rejected(self):
+        self.ItemWidget.deleteLater()
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.project = DefoldProject()
+        self.DialogNewResource = DialogNewResource(parent = self , project = self.project)
         self.setWindowTitle("Defold Editor")
         self.showMaximized()
         self._create_menu()
@@ -73,7 +119,7 @@ class MainWindow(QMainWindow):
         add_mesh.triggered.connect(self.addMesh)
         Add_menu.addAction(add_mesh)
 
-    def _create_main_layout(self) : 
+    def _create_main_layout(self) :
         self.fileExplorer = FileExplorer(self)
         self.fileExplorer.setSizePolicy(
             QSizePolicy.Preferred, QSizePolicy.Expanding
@@ -87,7 +133,7 @@ class MainWindow(QMainWindow):
         self.middle_zone.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Expanding
         )
-        # main splitter 
+        # main splitter
         self.main_split = QSplitter(Qt.Horizontal)
         self.main_split.addWidget(self.fileExplorer)
         self.main_split.addWidget(self.middle_zone)
@@ -113,12 +159,13 @@ class MainWindow(QMainWindow):
 
 
     def open_project(self,project_path = None ):
-        if not ( project_path is None) : 
-            if os.path.exists(project_path) : 
+        if not ( project_path is None) :
+            if os.path.exists(project_path) :
                 self.fileExplorer.set_rootPath(project_path)
                 self.fileExplorer.on_double_click = self.on_fileExplorerItemDoubleClicked
                 self.project.project_path = project_path
-        else :     
+                self.project.setMainWindow(self)
+        else :
             folder = QFileDialog.getExistingDirectory(
                 self,
                 "Select Folder",
@@ -129,24 +176,23 @@ class MainWindow(QMainWindow):
                 self.fileExplorer.set_rootPath(folder)
                 self.fileExplorer.on_double_click = self.on_fileExplorerItemDoubleClicked
                 self.project.project_path = folder
+                self.project.setMainWindow(self)
 
-    def addCamera(self) : 
+    def addCamera(self) :
         cam = CameraDesc.create_from_ui(self)
-        if cam : 
+        if cam :
             save_folder = self.fileExplorer.currentPathFolder()
             # cam.save2file(save_folder)
 
-    def addMesh(self) : 
+    def addMesh(self) :
         save_folder = self.fileExplorer.currentPathFolder()
-        mesh_ui = QMeshDescWidget( project= self.project)
-        mesh_ui.CreationUI()
-        mesh_ui.exec_blocking()
-        # mesh = MeshDesc.create_from_ui(self,project=self.project,save_folder = save_folder )
-        # if mesh : 
-        #     mesh.save2file(save_folder)
-    
-    def on_fileExplorerItemDoubleClicked(self,path) : 
-        if os.path.isdir(path) : return 
+        print(self.fileExplorer.currentPathFolder())
+        self.DialogNewResource.LoadWidget(WidgetDesc = QMeshDescWidget ,save_in_suggestion = self.fileExplorer.currentPathFolder())
+        self.DialogNewResource.exec_()
+        
+
+    def on_fileExplorerItemDoubleClicked(self,path) :
+        if os.path.isdir(path) : return
         ext = os.path.splitext(path)[1]
         print(ext)
 
@@ -160,10 +206,9 @@ if __name__ == "__main__":
 
     # # APPLY STYLE
     app.setStyleSheet(style.BLENDER_STYLE)
-
+    print("hhhhhhhhhh")
     window = MainWindow()
     window.open_project(os.path.join(prefrenece.PROJECTS_FOLDER , "Mobile-Game"))
     window.show()
 
     sys.exit(app.exec_())
-
