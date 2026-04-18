@@ -1,99 +1,48 @@
-import sys
-from PyQt5.QtWidgets import *
-
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView, QVBoxLayout, QWidget
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
 
 
-class FilePathEdit(QWidget):
-    def __init__(self, parent=None, dialog_title="Select File", filter="All Files (*)"):
-        super().__init__(parent)
-
-        self.dialog_title = dialog_title
-        self.filter = filter
-
-        # =========================
-        # BASE LINE EDIT
-        # =========================
-        self.line_edit = QLineEdit(self)
-
-        # add right padding so text doesn't go under button
-        self.line_edit.setStyleSheet("""
-            QLineEdit {
-                padding-right: 28px;
-            }
-        """)
-
-        # =========================
-        # OVERLAY BUTTON
-        # =========================
-        self.button = QPushButton("📁", self.line_edit)
-        self.button.setCursor(Qt.PointingHandCursor)
-        self.button.setFixedSize(24, 22)
-        self.button.clicked.connect(self.open_dialog)
-
-        # layout only holds line edit
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.line_edit)
-
-    def resizeEvent(self, event):
-        """Keep button glued to right side of QLineEdit"""
-        super().resizeEvent(event)
-
-        h = self.line_edit.height()
-        self.button.move(
-            self.line_edit.width() - self.button.width() - 2,
-            (h - self.button.height()) // 2
-        )
-
-    def open_dialog(self):
-        path, _ = QFileDialog.getOpenFileName(
-            self,
-            self.dialog_title,
-            self.line_edit.text() or "",
-            self.filter
-        )
-        if path:
-            self.line_edit.setText(path)
-
-    def text(self):
-        return self.line_edit.text()
-
-    def setText(self, value):
-        self.line_edit.setText(value)
-
-# =========================
-# MAIN WINDOW DEMO
-# =========================
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("QTreeView Example")
 
-        self.setWindowTitle("FilePathEdit Demo")
-        self.resize(600, 120)
-
+        # Central widget and layout
         central = QWidget()
-        layout = QVBoxLayout(central)
-
-        layout.addWidget(QLabel("Select a file:"))
-
-        self.file_picker = FilePathEdit(
-            dialog_title="Choose a file",
-            filter="All Files (*);;Images (*.png *.jpg)"
-        )
-
-        layout.addWidget(self.file_picker)
-
+        layout = QVBoxLayout()
+        central.setLayout(layout)
         self.setCentralWidget(central)
 
+        # Create tree view
+        tree = QTreeView()
+        layout.addWidget(tree)
 
-# =========================
-# RUN
-# =========================
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
+        # Create model and set header
+        model = QStandardItemModel()
+        model.setHorizontalHeaderLabels(["Name", "Type"])
 
-    win = MainWindow()
-    win.show()
+        # Top‑level item
+        parent1 = QStandardItem("Documents")
+        parent1.appendRow([QStandardItem("report.txt"), QStandardItem("file")])
+        parent1.appendRow([QStandardItem("notes.md"), QStandardItem("file")])
 
-    sys.exit(app.exec_())
+        # Second branch
+        parent2 = QStandardItem("Images")
+        parent2.appendRow([QStandardItem("photo.jpg"), QStandardItem("image")])
+        parent2.appendRow([QStandardItem("logo.png"), QStandardItem("image")])
+
+        model.appendRow(parent1)
+        model.appendRow(parent2)
+
+        # Attach model to tree
+        tree.setModel(model)
+
+        # Optional: expand all nodes
+        tree.expandAll()
+
+
+app = QApplication([])
+window = MainWindow()
+window.resize(400, 300)
+window.show()
+app.exec_()

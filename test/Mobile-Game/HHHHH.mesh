@@ -1,5 +1,0 @@
-material: "/builtins/materials/model.material"
-vertices: "/x.buffer"
-textures: "/assets/app_icons/icon_96.png"
-position_stream: "position"
-normal_stream: "color0"

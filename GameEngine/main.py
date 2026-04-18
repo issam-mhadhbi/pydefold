@@ -91,6 +91,24 @@ class DialogNewResource(QDialog) :
     def on_rejected(self):
         self.ItemWidget.deleteLater()
 
+
+
+class OutlinerWidget(QDialog) : 
+    def __init__(self,parent = None,project = None ):
+        super().__init__(parent=parent)
+        self.project = project
+        uic.loadUi(UI / "Outliner.ui" , self)
+
+    def LoadWidget(self,WidgetDesc,file_path = None ) : 
+        self.ItemWidget = QMeshDescWidget(project = self.project , parent = self )
+        self.ItemWidget.fromFile(file_path)
+        self.placeholder.addWidget(self.ItemWidget)
+        self.model = self.ItemWidget.outlineModel()
+        self.treeView.setModel(self.model)
+        
+        
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -124,8 +142,8 @@ class MainWindow(QMainWindow):
         self.fileExplorer.setSizePolicy(
             QSizePolicy.Preferred, QSizePolicy.Expanding
         )
-        self.assests_outline = QFrame(self)
-        self.assests_outline.setSizePolicy(
+        self.outlinerWidget = OutlinerWidget(parent = self , project = self.project)
+        self.outlinerWidget.setSizePolicy(
             QSizePolicy.Preferred, QSizePolicy.Expanding
         )
         self.middle_zone = QTabWidget(self)
@@ -137,7 +155,7 @@ class MainWindow(QMainWindow):
         self.main_split = QSplitter(Qt.Horizontal)
         self.main_split.addWidget(self.fileExplorer)
         self.main_split.addWidget(self.middle_zone)
-        self.main_split.addWidget(self.assests_outline)
+        self.main_split.addWidget(self.outlinerWidget)
         self.main_split.setStretchFactor(0, 0)
         self.main_split.setStretchFactor(1, 1)
         self.main_split.setStretchFactor(2, 0)
@@ -194,6 +212,11 @@ class MainWindow(QMainWindow):
     def on_fileExplorerItemDoubleClicked(self,path) :
         if os.path.isdir(path) : return
         ext = os.path.splitext(path)[1]
+        match ext : 
+            case ".mesh" : 
+                self.outlinerWidget.LoadWidget(WidgetDesc = QMeshDescWidget , file_path = path )
+            case _ : 
+                print("_")
         print(ext)
 
 

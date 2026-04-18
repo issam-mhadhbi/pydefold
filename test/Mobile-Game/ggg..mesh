@@ -1,5 +1,0 @@
-material: "builtins/fonts/font-df.material"
-vertices: "y.buffer"
-primitive_type: PRIMITIVE_TRIANGLES
-position_stream: "position"
-normal_stream: "position"

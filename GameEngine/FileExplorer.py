@@ -43,9 +43,6 @@ class FileExplorer(QTreeView):
         super().__init__(parent=parent)
         self.setMinimumWidth(250)
         
-        
-
-
     def on_double_clicked(self, index):
         path = self.model.filePath(index)
         self.currentPath = self.model.filePath(index)

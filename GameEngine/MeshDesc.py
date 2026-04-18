@@ -34,6 +34,8 @@ class QMeshDescWidget(QWidget) :
         self.position_stream.currentIndexChanged.connect(self.on_position_stream_changed)
         self.normal_stream.currentIndexChanged.connect(self.on_normal_stream_changed)
         self.primitive_type.currentIndexChanged.connect(self.on_primitive_type_changed)
+        
+        
     def on_material_changed(self, index):
         if index < 0: return
         self.msg.material = self.material.currentText()
@@ -47,6 +49,7 @@ class QMeshDescWidget(QWidget) :
         self.normal_stream.clear()
         buffer_path = self.project.fullPath(self.vertices.currentText())
         self.msg.vertices = self.vertices.currentText() 
+        print(self.msg.vertices)
         txt = Path(buffer_path).read_text()
 
         try:
@@ -75,6 +78,18 @@ class QMeshDescWidget(QWidget) :
         abs_path = self.project.fullPath(rel_path)
         print(MessageToString(self.msg))
         Path(abs_path).write_text(MessageToString(self.msg))
+        
+    def outlineModel(self) : 
+        model = QStandardItemModel()
+        model.setHorizontalHeaderLabels(["","Outliner"])
+        return model 
+        
+    def fromFile(self,file_path) : 
+        # update self.msg from the file 
+        # update the ui from self.msg 
+        pass 
+        
+    
         
 
         
