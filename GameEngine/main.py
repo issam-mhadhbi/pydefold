@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from FileExplorer import FileExplorer
 from Viewport import Viewport
 from CameraDesc import CameraDesc
-import MeshDesc
+import MeshDesc , ModelDesc
 from PyQt5 import uic
 HERE = os.path.dirname(__file__)
 UI = Path(os.path.join(HERE , 'Ui'))
@@ -39,6 +39,11 @@ class DefoldProject:
 
     def get_all_samplers(self):
         result = self.find_by_ext(".png")
+        return sorted(result)
+
+    def get_mesh_models(self):
+        result = self.find_by_ext(".dae")
+        result.extend(self.find_by_ext(".gltf"))
         return sorted(result)
 
     def LogError(self,msg) :
@@ -199,7 +204,7 @@ class MainWindow(QMainWindow):
             location = self.fileExplorer.currentPathFolder() ,
             project = self.project
         )
-        MeshDesc.request_new(**kwargs).exec_()
+        ModelDesc.request_new(**kwargs).exec_()
 
 
 
