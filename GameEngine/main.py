@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from FileExplorer import FileExplorer
 from Viewport import Viewport
 from CameraDesc import CameraDesc
-from MeshDesc import  QMeshDescWidget
+import MeshDesc   
 from PyQt5 import uic
 HERE = os.path.dirname(__file__)
 UI = Path(os.path.join(HERE , 'Ui'))
@@ -61,50 +61,25 @@ class DefoldProject:
 
 
 
-
-class DialogNewResource(QDialog) : 
-    def __init__(self,parent = None,project = None ):
-        super().__init__(parent=parent)
-        self.project = project
-        uic.loadUi(UI / "DialogNew.ui" , self)
-        self.ext = None 
-        self.accepted.connect(self.on_accepted)
-        self.rejected.connect(self.on_rejected)
-    def setExtension(self,ext) : 
-        self.ext = ext 
-        
-    def LoadWidget(self,WidgetDesc,save_in_suggestion = None ) : 
-        self.ItemWidget = QMeshDescWidget(project = self.project , parent = self )
-        self.location.addItems(self.project.get_all_folders())
-        if save_in_suggestion is not None : 
-            self.location.setCurrentText(self.project.relativePath(save_in_suggestion))
-        self.placeholder.addWidget(self.ItemWidget)
-        self.setWindowTitle(self.ItemWidget.DialogTitle)
-
-    def on_accepted(self):
-        self.ItemWidget.deleteLater()
-        saving_folder = self.location.currentText()
-        name = self.name.text().strip()
-        self.ItemWidget.save(folder = saving_folder , name = name )
-        print("Dialog accepted:")
-
-    def on_rejected(self):
-        self.ItemWidget.deleteLater()
-
-
-
 class OutlinerWidget(QDialog) : 
     def __init__(self,parent = None,project = None ):
         super().__init__(parent=parent)
         self.project = project
         uic.loadUi(UI / "Outliner.ui" , self)
 
-    def LoadWidget(self,WidgetDesc,file_path = None ) : 
-        self.ItemWidget = QMeshDescWidget(project = self.project , parent = self )
-        self.ItemWidget.fromFile(file_path)
-        self.placeholder.addWidget(self.ItemWidget)
-        self.model = self.ItemWidget.outlineModel()
-        self.treeView.setModel(self.model)
+    def setWidgetAndModel(self,widget = None) : 
+        self.clearOutliner()
+        self.placeholder.addWidget(widget)
+        self.treeView.setModel(widget.outlineModel)
+
+    def clearOutliner(self) : 
+        itm = self.placeholder.takeAt(0)
+        if itm : 
+            widget = itm.widget()
+            if widget : 
+                widget.deleteLater()
+
+
         
         
 
@@ -113,7 +88,6 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.project = DefoldProject()
-        self.DialogNewResource = DialogNewResource(parent = self , project = self.project)
         self.setWindowTitle("Defold Editor")
         self.showMaximized()
         self._create_menu()
@@ -203,18 +177,30 @@ class MainWindow(QMainWindow):
             # cam.save2file(save_folder)
 
     def addMesh(self) :
-        save_folder = self.fileExplorer.currentPathFolder()
-        print(self.fileExplorer.currentPathFolder())
-        self.DialogNewResource.LoadWidget(WidgetDesc = QMeshDescWidget ,save_in_suggestion = self.fileExplorer.currentPathFolder())
-        self.DialogNewResource.exec_()
+        kwargs = dict(
+            parent = self , 
+            location = self.fileExplorer.currentPathFolder() , 
+            project = self.project 
+        )
+        dialog = MeshDesc.request_new(**kwargs)
+        dialog.exec_()
+        # self.DialogNewResource.LoadWidget(WidgetDesc = QMeshDescWidget ,save_in_suggestion = self.fileExplorer.currentPathFolder())
+        # self.DialogNewResource
         
 
-    def on_fileExplorerItemDoubleClicked(self,path) :
-        if os.path.isdir(path) : return
-        ext = os.path.splitext(path)[1]
+    def on_fileExplorerItemDoubleClicked(self,file_path) :
+        if os.path.isdir(file_path) : return
+        ext = os.path.splitext(file_path)[1]
+        kwargs = dict( 
+            parent = self ,
+            project = self.project ,
+            file_path = file_path 
+        )
+
         match ext : 
             case ".mesh" : 
-                self.outlinerWidget.LoadWidget(WidgetDesc = QMeshDescWidget , file_path = path )
+                widget = MeshDesc.request_from_file(**kwargs)
+                self.outlinerWidget.setWidgetAndModel(widget = widget  )
             case _ : 
                 print("_")
         print(ext)
