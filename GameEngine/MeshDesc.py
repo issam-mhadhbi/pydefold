@@ -42,26 +42,29 @@ class QMeshDescWidget(QWidget) :
         if index < 0: return
         self.msg.material = self.material.currentText()
         samplers = self.getMaterialSamplers(self.msg.material)
-        self.msg.textures.extend(["" for sam in samplers])
+        self.msg.textures.extend(["" for sam in self.getMaterialSamplers(self.msg.material)])
         mat_widget = self.buildMaterialWidget(self.msg.material)
         self.proto_field_changed.emit("material")
 
     def buildMaterialWidget(self, rel_mat_file_path):
         self.clearMaterialWidget()
         samplers = self.getMaterialSamplers(rel_mat_file_path)
-        widget  , vhbox  , form = QWidget() , QVBoxLayout() ,  QFormLayout()
+        self.msg.textures.extend(["" for sam in self.getMaterialSamplers(rel_mat_file_path)])
+        widget  , vhbox  , form = QWidget(self) , QVBoxLayout() ,  QFormLayout()
+        vhbox.addLayout(form)
+        widget.setLayout(vhbox)
         for index , sampler in enumerate(samplers) :
             combo = QComboBox()
             combo.setObjectName(sampler.name)   # set object name
             combo.setCurrentIndex(-1)
             combo.setPlaceholderText(f"Select {sampler.name}...")
-            if self.msg.textures[index] != "" : 
-                combo.setCurrentText(self.msg.textures[index])
             combo.addItems(self.project.get_all_samplers())
+            if self.msg.textures[index] != "" :
+                print("-----------------" , self.msg.textures[index])
+                combo.setCurrentText(self.msg.textures[index])
             combo.currentIndexChanged.connect(self.on_sampler_changed)
             form.addRow(sampler.name , combo)
-        vhbox.addLayout(form)
-        widget.setLayout(vhbox)
+
         self.placeholder.addWidget(widget)
 
 
@@ -118,9 +121,13 @@ class QMeshDescWidget(QWidget) :
     def save(self,file_path) :
         Path(file_path).write_text(MessageToString(self.msg))
 
-    def buildOutlineModel(self) :
+    def buildOutlineModel(self,file_path) :
         self.outlineModel = QStandardItemModel()
-        self.outlineModel.setHorizontalHeaderLabels(["Outliner"])
+        self.outlineModel.setHorizontalHeaderLabels(["\t\t\t\tOutliner"])
+        child1 = QStandardItem(os.path.basename(file_path))
+        child1.setEditable(False)
+        self.outlineModel.appendRow(child1)
+        
 
     def getMaterialSamplers(self,rel_mat_file_path) :
         mat_file_path = self.project.fullPath(rel_mat_file_path)
@@ -138,10 +145,10 @@ class QMeshDescWidget(QWidget) :
         self.normal_stream.setCurrentText(self.msg.normal_stream)
         self.primitive_type.setCurrentText(self.primitive_modes.get(self.msg.primitive_type)  )
         self.buildMaterialWidget(self.msg.material)
-        self.buildOutlineModel()
+        self.buildOutlineModel(file_path)
 
 
-        
+
 
 class DialogNewResourceMesh(QDialog) :
     def __init__(self,parent = None,project = None ):

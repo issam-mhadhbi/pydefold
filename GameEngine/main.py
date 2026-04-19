@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from FileExplorer import FileExplorer
 from Viewport import Viewport
 from CameraDesc import CameraDesc
-import MeshDesc   
+import MeshDesc
 from PyQt5 import uic
 HERE = os.path.dirname(__file__)
 UI = Path(os.path.join(HERE , 'Ui'))
@@ -50,9 +50,11 @@ class DefoldProject:
         self.MainWindow.statusBar().showMessage(f"📢 {msg}")
     def setMainWindow(self,mainwindow) :
         self.MainWindow   = mainwindow
-        
-    def fullPath(self,rel_path) : 
-        return os.path.join(self.project_path,rel_path)
+
+    def fullPath(self,rel_path) :
+        abs_path = os.path.join(self.project_path,rel_path.removeprefix("/"))
+        print("*    "  , abs_path , "-->" , rel_path)
+        return abs_path
 
     def relativePath(self, abs_path):
         abs_path = Path(abs_path).resolve()
@@ -61,27 +63,28 @@ class DefoldProject:
 
 
 
-class OutlinerWidget(QDialog) : 
+class OutlinerWidget(QDialog) :
     def __init__(self,parent = None,project = None ):
         super().__init__(parent=parent)
         self.project = project
         uic.loadUi(UI / "Outliner.ui" , self)
 
-    def setWidgetAndModel(self,widget = None) : 
+
+    def setWidgetAndModel(self,widget = None) :
         self.clearOutliner()
         self.placeholder.addWidget(widget)
         self.treeView.setModel(widget.outlineModel)
 
-    def clearOutliner(self) : 
+    def clearOutliner(self) :
         itm = self.placeholder.takeAt(0)
-        if itm : 
+        if itm :
             widget = itm.widget()
-            if widget : 
+            if widget :
                 widget.deleteLater()
 
 
-        
-        
+
+
 
 
 class MainWindow(QMainWindow):
@@ -104,12 +107,18 @@ class MainWindow(QMainWindow):
         edit_menu = menubar.addMenu("Edit")
         Add_menu = menubar.addMenu("Add")
         #---
-        add_camera = QAction("Camera",self)
-        add_camera.triggered.connect(self.addCamera)
-        Add_menu.addAction(add_camera)
         add_mesh = QAction("Mesh",self)
         add_mesh.triggered.connect(self.addMesh)
         Add_menu.addAction(add_mesh)
+        #---
+        add_model = QAction("Model",self)
+        add_model.triggered.connect(self.addModel)
+        Add_menu.addAction(add_model)
+        #---
+        add_camera = QAction("Camera",self)
+        add_camera.triggered.connect(self.addCamera)
+        Add_menu.addAction(add_camera)
+
 
     def _create_main_layout(self) :
         self.fileExplorer = FileExplorer(self)
@@ -178,30 +187,36 @@ class MainWindow(QMainWindow):
 
     def addMesh(self) :
         kwargs = dict(
-            parent = self , 
-            location = self.fileExplorer.currentPathFolder() , 
-            project = self.project 
+            parent = self ,
+            location = self.fileExplorer.currentPathFolder() ,
+            project = self.project
         )
-        dialog = MeshDesc.request_new(**kwargs)
-        dialog.exec_()
-        # self.DialogNewResource.LoadWidget(WidgetDesc = QMeshDescWidget ,save_in_suggestion = self.fileExplorer.currentPathFolder())
-        # self.DialogNewResource
-        
+        MeshDesc.request_new(**kwargs).exec_()
+
+    def addModel(self) :
+        kwargs = dict(
+            parent = self ,
+            location = self.fileExplorer.currentPathFolder() ,
+            project = self.project
+        )
+        MeshDesc.request_new(**kwargs).exec_()
+
+
 
     def on_fileExplorerItemDoubleClicked(self,file_path) :
         if os.path.isdir(file_path) : return
         ext = os.path.splitext(file_path)[1]
-        kwargs = dict( 
+        kwargs = dict(
             parent = self ,
             project = self.project ,
-            file_path = file_path 
+            file_path = file_path
         )
 
-        match ext : 
-            case ".mesh" : 
+        match ext :
+            case ".mesh" :
                 widget = MeshDesc.request_from_file(**kwargs)
                 self.outlinerWidget.setWidgetAndModel(widget = widget  )
-            case _ : 
+            case _ :
                 print("_")
         print(ext)
 
