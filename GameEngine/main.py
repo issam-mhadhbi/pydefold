@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from pathlib import Path
-import style , prefrenece
+import style , Prefrenece
 from dataclasses import dataclass
 from FileExplorer import FileExplorer
 from Viewport import Viewport
@@ -175,7 +175,7 @@ class MainWindow(QMainWindow):
             folder = QFileDialog.getExistingDirectory(
                 self,
                 "Select Folder",
-                prefrenece.PROJECTS_FOLDER,
+                Prefrenece.PROJECTS_FOLDER,
                 QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks | QFileDialog.DontUseNativeDialog
             )
             if folder:
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     app.setStyleSheet(style.BLENDER_STYLE)
     print("hhhhhhhhhh")
     window = MainWindow()
-    window.open_project(os.path.join(prefrenece.PROJECTS_FOLDER , "Mobile-Game"))
+    window.open_project(os.path.join(Prefrenece.PROJECTS_FOLDER , "Mobile-Game"))
     window.show()
 
     sys.exit(app.exec_())

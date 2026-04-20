@@ -1,8 +1,117 @@
 import sys , os 
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import QDir, Qt
+from PyQt5.QtCore import *
+from PyQt5.QtGui import  * 
+import Prefrenece , subprocess , os 
+from pathlib import Path 
+
+from pathlib import Path 
 
 
+class LineNumberArea(QWidget):
+    def __init__(self, editor):
+        super().__init__(editor)
+        self.editor = editor
+
+    def sizeHint(self):
+        return QSize(self.editor.lineNumberAreaWidth(), 0)
+
+    def paintEvent(self, event):
+        self.editor.lineNumberAreaPaintEvent(event)
+
+
+class TextFileViewer(QPlainTextEdit):
+    def __init__(self):
+        super().__init__()
+
+        self.setReadOnly(True)  # ✅ make it read-only
+
+        self.lineNumberArea = LineNumberArea(self)
+        self.blockCountChanged.connect(self.updateLineNumberAreaWidth)
+        self.updateRequest.connect(self.updateLineNumberArea)
+        self.cursorPositionChanged.connect(self.highlightCurrentLine)
+
+        self.updateLineNumberAreaWidth(0)
+        self.highlightCurrentLine()
+
+    def lineNumberAreaWidth(self):
+        digits = len(str(max(1, self.blockCount())))
+        return 10 + self.fontMetrics().horizontalAdvance('9') * digits
+
+    def updateLineNumberAreaWidth(self, _):
+        self.setViewportMargins(self.lineNumberAreaWidth(), 0, 0, 0)
+
+    def updateLineNumberArea(self, rect, dy):
+        if dy:
+            self.lineNumberArea.scroll(0, dy)
+        else:
+            self.lineNumberArea.update(0, rect.y(), self.lineNumberArea.width(), rect.height())
+        if rect.contains(self.viewport().rect()):
+            self.updateLineNumberAreaWidth(0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        cr = self.contentsRect()
+        self.lineNumberArea.setGeometry(
+            QRect(cr.left(), cr.top(), self.lineNumberAreaWidth(), cr.height())
+        )
+
+    def lineNumberAreaPaintEvent(self, event):
+        painter = QPainter(self.lineNumberArea)
+        painter.fillRect(event.rect(), QColor(30, 30, 30))
+
+        block = self.firstVisibleBlock()
+        blockNumber = block.blockNumber()
+
+        top = int(self.blockBoundingGeometry(block).translated(self.contentOffset()).top())
+        bottom = top + int(self.blockBoundingRect(block).height())
+
+        while block.isValid() and top <= event.rect().bottom():
+            if block.isVisible() and bottom >= event.rect().top():
+                painter.setPen(Qt.white)
+                painter.drawText(
+                    0, top,
+                    self.lineNumberArea.width() - 5,
+                    self.fontMetrics().height(),
+                    Qt.AlignRight,
+                    str(blockNumber + 1)
+                )
+
+            block = block.next()
+            top = bottom
+            bottom = top + int(self.blockBoundingRect(block).height())
+            blockNumber += 1
+
+    def highlightCurrentLine(self):
+        selection = QTextEdit.ExtraSelection()
+        selection.format.setBackground(QColor(50, 50, 50))
+        selection.format.setProperty(QTextFormat.FullWidthSelection, True)
+
+        selection.cursor = self.textCursor()
+        selection.cursor.clearSelection()
+
+        self.setExtraSelections([selection])
+
+
+
+
+# ✅ Dialog wrapper
+class ViewerDialog(QDialog):
+    def __init__(self, file_path=None, text=None, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("File Viewer")
+        self.resize(800, 600)
+
+        layout = QVBoxLayout(self)
+
+        self.viewer = TextFileViewer()
+        layout.addWidget(self.viewer)
+
+        if file_path:
+            self.viewer.open_file(file_path)
+        elif text:
+            self.viewer.setPlainText(text)
 
 class FileExplorerFileSystemModel(QFileSystemModel):
 
@@ -60,30 +169,49 @@ class FileExplorer(QTreeView):
         path = self.model.filePath(index)
         self.selected_index= index 
         menu = QMenu()
-
+        
         open_action = QAction("Open", self)
         delete_action = QAction("Delete", self)
         rename_action = QAction("Rename", self)
-
+        open_file_manager_action = QAction("Reveal in File Manager", self)
+        open_defold = QAction("Open Defold", self)
+        open_as_text = QAction("Open as text", self)
+        open_terminal_here = QAction("Open Treminal Here ...", self)
         menu.addAction(open_action)
         menu.addSeparator()
         menu.addAction(rename_action)
         menu.addAction(delete_action)
-
+        menu.addSeparator()
+        menu.addAction(open_file_manager_action)
+        menu.addSeparator()
+        menu.addAction(open_defold)
+        menu.addSeparator()
+        menu.addAction(open_as_text)
+        menu.addSeparator()
+        menu.addAction(open_terminal_here)
         action = menu.exec_(self.viewport().mapToGlobal(position))
 
         # =========================
         # ACTIONS
         # =========================
-        if action == open_action:
-            print("Open:", path)
 
+        if action == open_action:
+            self.open_as_text(path)
+
+        if action == open_terminal_here:
+            self.open_terminal_here(path)
+        elif action == open_as_text:
+            self.open_as_text(path)
         elif action == delete_action:
             self.delete_item(path)
 
         elif action == rename_action:
             self.edit(index)  # built-in rename
 
+        elif action == open_file_manager_action :
+            self.exec_open_file_manager_action(path)  # built-in rename
+        elif action == open_defold :
+            self.open_defold(path)  # built-in rename          
     def on_single_click(self,index):
         if not index.isValid():
             return
@@ -144,6 +272,57 @@ class FileExplorer(QTreeView):
         if os.path.isfile(self.currentPath) : 
             return os.path.dirname(self.currentPath)
         return self.currentPath
+        
+    def exec_open_file_manager_action(self,path) : 
+        open_path = path if  Path(path).is_dir() else Path(path).parent
+        proc = subprocess.Popen(
+            [Prefrenece.FILE_MANAGER_BIN, open_path],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+
+    def open_defold(self,path) : 
+        if self.model is None : return 
+        game_project = os.path.join(self.model.rootPath() , "game.project")
+        if not Path(game_project).exists() : return 
+        proc = subprocess.Popen(
+            [Prefrenece.DEFOLD_BIN, game_project],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+
+    def open_as_text(self,path) : 
+        if self.model is None : return 
+        path_file = Path(path)
+        if not path_file.exists():return
+        if not path_file.is_file(): return
+        ViewerDialog(text=path_file.read_text(), parent=self).exec_()
+        
+    def open_terminal_here(self,path) : 
+        if self.model is None : return 
+        open_path = path if  Path(path).is_dir() else Path(path).parent
+        proc = subprocess.Popen(
+            [Prefrenece.TERMINAL_BIN],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True , 
+            cwd = str(open_path)
+        )  
+        
+        
+        
+        
+        
+
+
+
+
+
 # =========================
 # RUN
 # =========================
