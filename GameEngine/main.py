@@ -221,6 +221,10 @@ class MainWindow(QMainWindow):
             case ".mesh" :
                 widget = MeshDesc.request_from_file(**kwargs)
                 self.outlinerWidget.setWidgetAndModel(widget = widget  )
+
+            case ".model" :
+                widget = ModelDesc.request_from_file(**kwargs)
+                self.outlinerWidget.setWidgetAndModel(widget = widget  )
             case _ :
                 print("_")
         print(ext)
