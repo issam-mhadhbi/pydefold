@@ -1,0 +1,4 @@
+material: "builtins/materials/gui.material"
+vertices: "y.buffer"
+position_stream: "color0"
+normal_stream: "position"

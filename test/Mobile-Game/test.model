@@ -1,0 +1,17 @@
+mesh: "/builtins/assets/gltf/quad.gltf"
+skeleton: "/builtins/assets/gltf/quad.gltf"
+animations: "/builtins/assets/gltf/quad.gltf"
+default_animation: "builtins/assets/gltf/quad.gltf"
+name: "test"
+materials {
+  name: "default"
+  material: "/builtins/fonts/label-df.material"
+  textures {
+    sampler: "tex0"
+    texture: "/assets/app_icons/icon_167.png"
+  }
+  textures {
+    sampler: "tex1"
+    texture: "/assets/app_icons/icon_114.png"
+  }
+}

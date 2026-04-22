@@ -1,0 +1,4 @@
+material: "builtins/fonts/debug/always_on_top_font.material"
+vertices: "x.buffer"
+position_stream: "position"
+normal_stream: "position"

@@ -1,0 +1,8 @@
+mesh: "builtins/assets/gltf/quad.gltf"
+material: "mats/model.material"
+textures: "assets/background.png"
+textures: "assets/background.png"
+skeleton: "builtins/assets/gltf/quad.gltf"
+animations: "builtins/assets/gltf/quad.gltf"
+default_animation: "builtins/assets/gltf/quad.gltf"
+create_go_bones: true

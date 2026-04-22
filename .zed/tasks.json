@@ -1,0 +1,8 @@
+[
+  {
+    "label": "Run Python",
+    "command": "/home/username/Desktop/.venv/bin/python",
+    "args": ["${file}"],
+    "cwd": "${workspaceRoot}"
+  }
+]
