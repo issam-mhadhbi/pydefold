@@ -6,6 +6,7 @@ sys.path.extend([
     os.path.join(os.path.dirname(__file__) , 'pydefoldsdk')
 ])
 import  gamesys.model_ddf_pb2
+import render.material_ddf_pb2
 import os, sys, json
 from google.protobuf.json_format import MessageToJson
 from google.protobuf.text_format import MessageToString, Parse
@@ -78,7 +79,7 @@ class QModelDescWidget(QWidget) :
         self.msg.materials[0].material = self.materials.currentText()
         self.msg.materials[0].textures.clear()
         samplers = self.getMaterialSamplers(self.msg.materials[0].material)
-        self.msg.materials[0].textures.extend(["" for sam in samplers])
+        self.msg.materials[0].textures.extend([gamesys.model_ddf_pb2.Texture(sampler = sam.name , texture = "") for sam in samplers])
         
         
 
@@ -87,7 +88,7 @@ class QModelDescWidget(QWidget) :
         
     def getMaterialSamplers(self,rel_mat_file_path) :
         mat_file_path = self.project.fullPath(rel_mat_file_path)
-        material = sdk.MaterialDesc()
+        material = render.material_ddf_pb2.MaterialDesc()
         Parse(Path(mat_file_path).read_text().encode('utf-8'), material)
         return material.samplers
 
@@ -113,8 +114,8 @@ class QModelDescWidget(QWidget) :
 
     def on_sampler_changed(self,index) :
         if index < 0 : return
-        sampler_index = [sam.name for sam in self.getMaterialSamplers(self.msg.material)].index(self.sender().objectName())
-        self.msg.textures[sampler_index] = self.sender().currentText()
+        sampler_index = [sam.name for sam in self.getMaterialSamplers(self.msg.materials[0].material)].index(self.sender().objectName())
+        self.msg.materials[0].textures[sampler_index].texture = self.sender().currentText()
         self.proto_field_changed.emit("textures")   
         
     def clearMaterialWidget(self) :
@@ -135,8 +136,9 @@ class QModelDescWidget(QWidget) :
         self.create_go_bones.setChecked(self.msg.create_go_bones)
         self.animations.setCurrentText(self.msg.animations)
         self.default_animation.setCurrentText(self.msg.default_animation)
-        self.material.setCurrentText(self.msg.materials.material)
-        self.buildMaterialWidget(self.msg.materials.material)
+        if len(self.msg.materials) > 0 : 
+            self.materials.setCurrentText(self.msg.materials[0].material)
+            self.buildMaterialWidget(self.msg.materials[0].material)
         self.buildOutlineModel(file_path)
 
     def buildOutlineModel(self,file_path) :
