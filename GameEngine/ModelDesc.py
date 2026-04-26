@@ -1,7 +1,11 @@
 from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import List
-from pydefoldsdk import sdk
+import sys , os 
+sys.path.extend([
+    os.path.join(os.path.dirname(__file__) , 'pydefoldsdk')
+])
+import  gamesys.model_ddf_pb2
 import os, sys, json
 from google.protobuf.json_format import MessageToJson
 from google.protobuf.text_format import MessageToString, Parse
@@ -19,7 +23,7 @@ class QModelDescWidget(QWidget) :
         super().__init__(parent=parent)
         self.DialogTitle = "New Model"
         self.project = project
-        self.msg = sdk.ModelDesc()
+        self.msg = gamesys.model_ddf_pb2.ModelDesc()
         uic.loadUi(UI / "ModelDescOutliner.ui" , self)
         self.mesh.addItems(self.project.get_mesh_models())
         self.skeleton.addItems(self.project.get_mesh_models())
@@ -69,14 +73,15 @@ class QModelDescWidget(QWidget) :
         
     def on_materials_changed(self, index):
         if index < 0: return
-
-        self.msg.materials = sdk.Material(name = "default" )
-        self.msg.materials.material = self.materials.currentText()
-        self.msg.materials.textures.clear()
-        self.msg.materials.textures.extend(["" for sam in samplers])
-        
-        
+        self.msg.materials.clear()
+        self.msg.materials.append(gamesys.model_ddf_pb2.Material(name = "default" ))
+        self.msg.materials[0].material = self.materials.currentText()
+        self.msg.materials[0].textures.clear()
         samplers = self.getMaterialSamplers(self.msg.materials[0].material)
+        self.msg.materials[0].textures.extend(["" for sam in samplers])
+        
+        
+
         mat_widget = self.buildMaterialWidget(self.msg.materials[0].material)
         self.proto_field_changed.emit("materials")
         

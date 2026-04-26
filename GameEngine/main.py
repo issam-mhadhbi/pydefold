@@ -1,8 +1,12 @@
 import sys , os , json
+from pathlib import Path
+HERE = os.path.dirname(__file__)
+UI = Path(os.path.join(HERE , 'Ui'))
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from pathlib import Path
+
 import style , Prefrenece
 from dataclasses import dataclass
 from FileExplorer import FileExplorer
@@ -10,8 +14,7 @@ from Viewport import Viewport
 from CameraDesc import CameraDesc
 import MeshDesc , ModelDesc
 from PyQt5 import uic
-HERE = os.path.dirname(__file__)
-UI = Path(os.path.join(HERE , 'Ui'))
+
 
 
 @dataclass
