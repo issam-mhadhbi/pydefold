@@ -1,0 +1,12 @@
+mesh: "/builtins/assets/gltf/quad_2x2.gltf"
+skeleton: "/builtins/assets/gltf/sphere.gltf"
+animations: "/builtins/assets/meshes/cube.dae"
+name: "standartmodel"
+materials {
+  name: "default"
+  material: "/builtins/materials/model.material"
+  textures {
+    sampler: "tex0"
+    texture: "/assets/app_icons/icon_114.png"
+  }
+}

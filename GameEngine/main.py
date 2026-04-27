@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from FileExplorer import FileExplorer
 from Viewport import Viewport
 from CameraDesc import CameraDesc
-import MeshDesc , ModelDesc
+import MeshDesc , ModelDesc , MaterialDesc
 from PyQt5 import uic
 
 
@@ -123,9 +123,9 @@ class MainWindow(QMainWindow):
         add_model.triggered.connect(self.addModel)
         Add_menu.addAction(add_model)
         #---
-        add_camera = QAction("Camera",self)
-        add_camera.triggered.connect(self.addCamera)
-        Add_menu.addAction(add_camera)
+        add_material = QAction("Maeterial",self)
+        add_material.triggered.connect(self.addMaterial)
+        Add_menu.addAction(add_material)
 
 
     def _create_main_layout(self) :
@@ -187,11 +187,13 @@ class MainWindow(QMainWindow):
                 self.project.project_path = folder
                 self.project.setMainWindow(self)
 
-    def addCamera(self) :
-        cam = CameraDesc.create_from_ui(self)
-        if cam :
-            save_folder = self.fileExplorer.currentPathFolder()
-            # cam.save2file(save_folder)
+    def addMaterial(self) :
+        kwargs = dict(
+            parent = self ,
+            location = self.fileExplorer.currentPathFolder() ,
+            project = self.project
+        )
+        MaterialDesc.request_new(**kwargs).exec_()
 
     def addMesh(self) :
         kwargs = dict(

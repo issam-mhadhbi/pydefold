@@ -6,6 +6,10 @@ embedded_instances {
   "  id: \"main\"\n"
   "  component: \"/main/main.script\"\n"
   "}\n"
+  "components {\n"
+  "  id: \"hh\"\n"
+  "  component: \"/hh.model\"\n"
+  "}\n"
   "embedded_components {\n"
   "  id: \"logo\"\n"
   "  type: \"sprite\"\n"
@@ -54,5 +58,25 @@ embedded_instances {
   position {
     x: 320.0
     y: 568.0
+  }
+}
+embedded_instances {
+  id: "go1"
+  data: "components {\n"
+  "  id: \"hh\"\n"
+  "  component: \"/hh.model\"\n"
+  "}\n"
+  "components {\n"
+  "  id: \"xx\"\n"
+  "  component: \"/main/xx.script\"\n"
+  "}\n"
+  ""
+  position {
+    x: 328.0
+    y: 558.0
+  }
+  scale3 {
+    x: 200.0
+    y: 200.0
   }
 }

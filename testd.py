@@ -1,100 +1,64 @@
-from pydefoldsdk import sdk
-from google.protobuf.descriptor import FieldDescriptor
+import os
+import xml.etree.ElementTree as ET
 
+class AnimationParser:
+    def __init__(self, path):
+        self.path = path
+        self.ext = os.path.splitext(path)[1].lower()
 
-# ─────────────────────────────
-# 🧠 Type + Label mapping
-# ─────────────────────────────
-TYPE_MAP = {
-    FieldDescriptor.TYPE_DOUBLE: "double",
-    FieldDescriptor.TYPE_FLOAT: "float",
-    FieldDescriptor.TYPE_INT64: "int64",
-    FieldDescriptor.TYPE_UINT64: "uint64",
-    FieldDescriptor.TYPE_INT32: "int32",
-    FieldDescriptor.TYPE_UINT32: "uint32",
-    FieldDescriptor.TYPE_BOOL: "bool",
-    FieldDescriptor.TYPE_STRING: "string",
-    FieldDescriptor.TYPE_BYTES: "bytes",
-    FieldDescriptor.TYPE_ENUM: "enum",
-    FieldDescriptor.TYPE_MESSAGE: "message",
-}
+        if self.ext not in [".gltf", ".glb", ".dae"]:
+            raise ValueError("Unsupported format: use .gltf, .glb, or .dae")
 
-LABEL_MAP = {
-    FieldDescriptor.LABEL_OPTIONAL: "optional",
-    FieldDescriptor.LABEL_REPEATED: "repeated",
-    FieldDescriptor.LABEL_REQUIRED: "required",
-}
+    def get_animation_names(self):
+        if self.ext in [".gltf", ".glb"]:
+            return self._parse_gltf()
+        elif self.ext == ".dae":
+            return self._parse_dae()
 
+    # ─────────────────────────────
+    # 🟢 GLTF / GLB
+    # ─────────────────────────────
+    def _parse_gltf(self):
+        try:
+            from pygltflib import GLTF2
+        except ImportError:
+            raise ImportError("Install pygltflib: pip install pygltflib")
 
-# ─────────────────────────────
-# 🔍 Recursive inspector
-# ─────────────────────────────
-def inspect_message(msg, indent=0, path=None):
-    if path is None:
-        path = set()
+        gltf = GLTF2().load(self.path)
 
-    desc = msg.DESCRIPTOR
-    pad = "  " * indent
+        names = []
+        for i, anim in enumerate(gltf.animations):
+            if anim.name:
+                names.append(anim.name)
+            else:
+                names.append(f"animation_{i}")
 
-    print(f"{pad}{desc.name} {{")
+        return names
 
-    # 🛑 prevent infinite recursion ONLY in current branch
-    if desc.full_name in path:
-        print(f"{pad}  ... (recursive reference)")
-        print(f"{pad}}}")
-        return
+    # ─────────────────────────────
+    # 🔵 COLLADA (DAE)
+    # ─────────────────────────────
+    def _parse_dae(self):
+        tree = ET.parse(self.path)
+        root = tree.getroot()
 
-    # add to current path
-    path.add(desc.full_name)
+        ns = {'c': 'http://www.collada.org/2005/11/COLLADASchema'}
 
-    for field in desc.fields:
-        label = LABEL_MAP.get(field.label, "")
-        field_type = TYPE_MAP.get(field.type, str(field.type))
+        names = []
 
-        # ── Nested message
-        if field.type == FieldDescriptor.TYPE_MESSAGE:
-            print(f"{pad}  {label} {field.name} -> {field.message_type.name}")
+        for i, anim in enumerate(root.findall('.//c:animation', ns)):
+            anim_id = anim.get('id')
+            anim_name = anim.get('name')
 
-            sub_msg = field.message_type._concrete_class()
+            if anim_name:
+                names.append(anim_name)
+            elif anim_id:
+                names.append(anim_id)
+            else:
+                names.append(f"animation_{i}")
 
-            # 🔑 pass COPY of path (branch isolation)
-            inspect_message(sub_msg, indent + 1, path.copy())
-
-        # ── Enum
-        elif field.type == FieldDescriptor.TYPE_ENUM:
-            enum_vals = [v.name for v in field.enum_values]
-            print(f"{pad}  {label} {field.name}: enum {enum_vals}")
-
-        # ── Primitive
-        else:
-            print(f"{pad}  {label} {field.name}: {field_type}")
-
-    print(f"{pad}}}")
-
-# ─────────────────────────────
-# 📦 Show current values (if set)
-# ─────────────────────────────
-def show_values(msg, indent=0):
-    pad = "  " * indent
-
-    for field, value in msg.ListFields():
-        if field.type == FieldDescriptor.TYPE_MESSAGE:
-            print(f"{pad}{field.name}:")
-            show_values(value, indent + 1)
-        else:
-            print(f"{pad}{field.name}: {value}")
-
-
-# ─────────────────────────────
-# 🚀 MAIN
-# ─────────────────────────────
-if __name__ == "__main__":
-    x = sdk.ModelDesc()
-
-    print("\n=== 🧠 STRUCTURE ===\n")
-    inspect_message(x)
-
-
-
-    print("\n=== 📦 CURRENT VALUES (if any) ===\n")
-    show_values(x)
+        return names
+        
+        
+parser = AnimationParser("/home/username/Desktop/dev.issam/Defold/test/Mobile-Game/builtins/assets/gltf/cube.gltf")
+print(parser.get_animation_names())
